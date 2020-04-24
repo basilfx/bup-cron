@@ -50,6 +50,7 @@ import sys
 import traceback
 
 
+
 class ArgumentConfigParser(argparse.ArgumentParser):
     configs = ['/etc/bup-cron.conf',
                '~/.bup-cron.conf',
@@ -164,8 +165,8 @@ tries to be silent if not specified.
         group.add_argument('-l', '--logfile', default=sys.stdout,
                            help="""file where logs should be written,
                                    defaults to stdout""")
-        levels = [i for i in logging._levelNames.keys()
-                  if (type(i) == str and i != 'NOTSET')]
+        levels = sorted([v for k, v in logging._levelToName.items() 
+                         if v != 'NOTSET'])
         group.add_argument('--syslog', nargs='?', default=None,
                            type=str.upper, action='store',
                            const='INFO', choices=levels,
