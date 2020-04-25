@@ -693,7 +693,7 @@ class Pidfile():
             else:
                 raise
 
-        os.write(self.pidfd, str(os.getpid()))
+        os.write(self.pidfd, str(os.getpid()).encode())
         os.close(self.pidfd)
         return self
 
@@ -827,7 +827,7 @@ even in info and debug
             if self.verbose >= 2:
                 stdout = self._log
             else:
-                stdout = file(os.devnull)
+                stdout = subprocess.DEVNULL
             subprocess.check_call(cmd, stdout=stdout, stderr=self._warn,
                                   close_fds=True)
         except subprocess.CalledProcessError:
@@ -898,8 +898,8 @@ class BupCronMetaData(object):
         self.disk_usage()
 
     def versions(self):
-        self.local_bup = subprocess.check_output(['bup', '--version']).rstrip('\n')
-        git_output = subprocess.check_output(['git', '--version']).rstrip('\n')
+        self.local_bup = subprocess.check_output(['bup', '--version']).decode().rstrip('\n')
+        git_output = subprocess.check_output(['git', '--version']).decode().rstrip('\n')
         self.local_git = re.match('git version (.*)', git_output).group(1)
         self.local_python = platform.python_version()
         if self.remote:
@@ -909,7 +909,7 @@ class BupCronMetaData(object):
                    'python --version 2>&1' )
             cmd = [ 'ssh', '-T', server, cmd ]
             logging.debug('calling command `%s`' % cmd)
-            bup, git, python = subprocess.check_output(cmd).split('\n', 2)
+            bup, git, python = subprocess.check_output(cmd).decode().split('\n', 2)
             self.remote_bup = bup
             self.remote_git = re.match('git version (.*)', git).group(1)
             self.remote_python = re.match('Python (.*)', python).group(1)            
@@ -923,7 +923,7 @@ class BupCronMetaData(object):
             obj_path = os.path.join(repo_path, 'objects/pack')
             cmd = ['ssh', '-T', server, ' '.join(self.du_cmd), "'%s'" % obj_path]
         logging.debug('calling command `%s`' % cmd)
-        self.sizes.append(int(subprocess.check_output(cmd).split('\t')[0]))
+        self.sizes.append(int(subprocess.check_output(cmd).decode().split('\t')[0]))
 
     @staticmethod
     def format_bytes(num, suffix='B'):
@@ -1002,7 +1002,7 @@ Remote versions
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        (out, err) = process.communicate(str(self))
+        (out, err) = process.communicate(str(self).encode())
         if process.returncode != 0:
             logging.warning('failed to save bup note: `%s%s` (%d)' % (out, err, process.returncode))
         return process.returncode == 0
