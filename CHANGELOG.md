@@ -1,3 +1,11 @@
+bup-cron (2.0)
+
+  * initial support for Python 3.7+
+    * requires bup 0.30+, which has preliminary support for Python 3
+  * repository cleanup
+
+ -- Bas Stottelaar <basstottelaar@gmail.com> Sat, 25 Apr 2020 12:00:00 +0200
+
 bup-cron (1.3)
 
   * logging output improvements:

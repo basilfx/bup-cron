@@ -11,11 +11,11 @@ commandline with a @ prefix (e.g. @foo.conf).
 
 at least path and repo need to be specified."""
 
-__version_info__ = ('1', '3')
+__version_info__ = ('2', '0')
 __version__ = '.'.join(__version_info__)
 __author__ = 'Antoine Beaupré'
 __email__ = 'anarcat@debian.org'
-__copyright__ = '(C) 2013-2014 %s <%s>' % (__author__, __email__)
+__copyright__ = '(C) 2013-2020 %s <%s>' % (__author__, __email__)
 __warranty__ = '''This program comes with ABSOLUTELY NO WARRANTY.  This is free
 software, and you are welcome to redistribute it under certain
 conditions; see `--copyright` for details.'''
