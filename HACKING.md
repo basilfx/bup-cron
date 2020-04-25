@@ -3,7 +3,7 @@ bup-cron maintenance instructions
 
 This document describes various aspects of the maintenance of this
 software project. For usage instructions, see the
-[README](README.mdwn) file.
+[README](README.md) file.
 
 Release checklist
 -----------------
