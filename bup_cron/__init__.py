@@ -153,7 +153,7 @@ class ArgumentConfigParser(argparse.ArgumentParser):
                            help='''display copyright notice and exit''')
         group.add_argument('--version', action='store_true',
                            help='''display version number and exit''')
-        group.add_argument('-v', '--verbose', action='count',
+        group.add_argument('-v', '--verbose', action='count', default=0,
                            help="""output more information on console.
 tries to be silent if not specified.
 -v implies explaining what we do,
