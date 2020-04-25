@@ -49,6 +49,7 @@ import subprocess
 import sys
 import traceback
 
+global_logger = None
 
 
 class ArgumentConfigParser(argparse.ArgumentParser):
@@ -538,12 +539,12 @@ class Bup():
         cmd = ['bup', 'init']
         if remote_rep:
             cmd += ['-r', remote_rep]
-        return GlobalLogger().check_call(cmd)
+        return global_logger.check_call(cmd)
 
     @staticmethod
     def clear_index():
         logging.info('clearing the index')
-        return GlobalLogger().check_call(['bup', 'index', '--clear'])
+        return global_logger.check_call(['bup', 'index', '--clear'])
 
     @staticmethod
     def fsck(remote_rep, parity=False, repair=False):
@@ -553,12 +554,12 @@ class Bup():
             addr, path = remote_rep.split(':')
             base_cmd = ['ssh', addr, 'bup', '-d', path, 'fsck']
 
-        if GlobalLogger().verbose >= 3:
+        if global_logger.verbose >= 3:
             base_cmd += ['--verbose']
 
         if parity:
             cmd = base_cmd + ['--par2-ok']
-            if not GlobalLogger().check_call(cmd):
+            if not global_logger.check_call(cmd):
                 logging.warning("""bup reports par2(1) as not working,
 no recovery blocks written""")
                 return False
@@ -571,7 +572,7 @@ no recovery blocks written""")
             # XXX: always use --quick for now
             cmd = base_cmd + ['--quick']
             logging.info('verifying bup repository')
-        return GlobalLogger().check_call(cmd)
+        return global_logger.check_call(cmd)
 
 
     @staticmethod
@@ -581,7 +582,7 @@ no recovery blocks written""")
         # XXX: should be -q(uiet) unless verbose > 0 - but bup
         # index has no -q
         cmd = ['bup', 'index']
-        if GlobalLogger().verbose >= 3:
+        if global_logger.verbose >= 3:
             cmd += ['--verbose']
         if excludes:
             cmd += map((lambda ex: '--exclude=' + ex), excludes)
@@ -594,15 +595,15 @@ no recovery blocks written""")
         if one_file_system:
             cmd += ['--one-file-system']
         cmd += [path]
-        return GlobalLogger().check_call(cmd)
+        return global_logger.check_call(cmd)
 
     @staticmethod
     def save(paths, branch, graft, remote_rep):
         logging.info('saving %s' % quotes(paths))
         cmd = ['bup', 'save']
-        if GlobalLogger().verbose <= 0:
+        if global_logger.verbose <= 0:
             cmd += ['--quiet']
-        elif GlobalLogger().verbose >= 3:
+        elif global_logger.verbose >= 3:
             cmd += ['--verbose']
         if remote_rep:
             cmd += ['-r', remote_rep]
@@ -613,10 +614,10 @@ no recovery blocks written""")
             cmd += ['--strip-path', graft]
         #  -t and -c are apparently useful in case of disaster;
         # unfortunately, they are useless if we don't show or log the output
-        if GlobalLogger().verbose >= 2:
+        if global_logger.verbose >= 2:
             cmd += ['--tree', '--commit']
         cmd += paths
-        return GlobalLogger().check_call(cmd)
+        return global_logger.check_call(cmd)
 
 
 class Pidfile():
@@ -767,35 +768,7 @@ class ProcessRunningException(Exception):
                                   % (path, pid))
 
 
-class Singleton(object):
-    """singleton implementation
-
-    inspired from:
-
-   http://stackoverflow.com/questions/42558/python-and-the-singleton-pattern"""
-
-    """the single object this will always return"""
-    _instance = None
-
-    """if __init__ was ran"""
-    _init = False
-
-    def __new__(cls, *args, **kwargs):
-        """override constructor to return a single object"""
-        if not cls._instance:
-            cls._instance = super(Singleton, cls).__new__(
-                cls, *args, **kwargs)
-        return cls._instance
-
-    def __init__(self, *args, **kwargs):
-        """return if __init__ was previously ran"""
-        super(Singleton, self).__init__(self, *args, **kwargs)
-        i = self._init
-        self._init = True
-        return i
-
-
-class GlobalLogger(Singleton):
+class GlobalLogger(object):
     """convenient executer with support for logging as well
 
     ERROR: things that make us exit
@@ -809,42 +782,41 @@ even in info and debug
 
     def __init__(self, args=None):
         """initialise the singleton, only if never initialised"""
-        if not Singleton.__init__(self):
-            self.verbose = args.verbose
-            self._log = args.logfile
-            self._warn = sys.stderr
+        self.verbose = args.verbose
+        self._log = args.logfile
+        self._warn = sys.stderr
 
-            # setup python logging facilities
-            if args.syslog:
-                sl = logging.handlers.SysLogHandler(address='/dev/log')
-                sl.setFormatter(logging.Formatter('bup-cron[%(process)d]: %(message)s'))
-                # convert syslog argument to a numeric value
-                loglevel = getattr(logging, args.syslog.upper(), None)
-                if not isinstance(loglevel, int):
-                    raise ValueError('Invalid log level: %s' % loglevel)
-                sl.setLevel(loglevel)
-                logging.getLogger('').addHandler(sl)
-                logging.debug('configured syslog level %s' % loglevel)
-            # log everything in main logger
-            logging.getLogger('').setLevel(logging.DEBUG)
-            if args.logfile == sys.stdout or args.logfile == '/dev/stdout':
-                sh = logging.StreamHandler()
-                if args.verbose > 1:
-                    sh.setLevel(logging.DEBUG)
-                elif args.verbose > 0:
-                    sh.setLevel(logging.INFO)
-                else:
-                    sh.setLevel(logging.WARNING)
-                self._log = sh.stream
-                logging.getLogger('').addHandler(sh)
-                logging.debug('configured stdout level %s' % sh.level)
+        # setup python logging facilities
+        if args.syslog:
+            sl = logging.handlers.SysLogHandler(address='/dev/log')
+            sl.setFormatter(logging.Formatter('bup-cron[%(process)d]: %(message)s'))
+            # convert syslog argument to a numeric value
+            loglevel = getattr(logging, args.syslog.upper(), None)
+            if not isinstance(loglevel, int):
+                raise ValueError('Invalid log level: %s' % loglevel)
+            sl.setLevel(loglevel)
+            logging.getLogger('').addHandler(sl)
+            logging.debug('configured syslog level %s' % loglevel)
+        # log everything in main logger
+        logging.getLogger('').setLevel(logging.DEBUG)
+        if args.logfile == sys.stdout or args.logfile == '/dev/stdout':
+            sh = logging.StreamHandler()
+            if args.verbose > 1:
+                sh.setLevel(logging.DEBUG)
+            elif args.verbose > 0:
+                sh.setLevel(logging.INFO)
             else:
-                # keep 52 weeks of logs
-                fh = logging.handlers.TimedRotatingFileHandler(args.logfile, when='W6', backupCount=52)
-                # serve back the stream to other processes
-                self._log = fh.stream
-                logging.getLogger('').addHandler(fh)
-                logging.debug('configured file output to %s, level %s' % (args.logfile, fh.level))
+                sh.setLevel(logging.WARNING)
+            self._log = sh.stream
+            logging.getLogger('').addHandler(sh)
+            logging.debug('configured stdout level %s' % sh.level)
+        else:
+            # keep 52 weeks of logs
+            fh = logging.handlers.TimedRotatingFileHandler(args.logfile, when='W6', backupCount=52)
+            # serve back the stream to other processes
+            self._log = fh.stream
+            logging.getLogger('').addHandler(fh)
+            logging.debug('configured file output to %s, level %s' % (args.logfile, fh.level))
 
     def check_call(self, cmd):
         """call a process, log it to the logfile
@@ -1044,9 +1016,9 @@ def process(args):
     # current lvm object to cleanup in exception handlers
     for path in args.paths:
         with Snapshot.select(args.snapshot)(path, args.size,
-                                            logging.info, logging.warn,
-                                            GlobalLogger().verbose,
-                                            GlobalLogger().check_call,
+                                            logging.info, logging.warning,
+                                            global_logger.verbose,
+                                            global_logger.check_call,
                                             args.mountpoint) as snapshot:
 
             # XXX: this shouldn't be in the loop like this, bup index should be
@@ -1101,12 +1073,14 @@ def bail(status, timer, msg=None):
 def main():
     """main entry point, sets up error handlers and parses arguments"""
 
+    global global_logger
+
     locale.setlocale(locale.LC_ALL, '')
     args = ArgumentConfigParser().parse_args()
     timer = Timer()
 
     # initialize GlobalLogger singleton
-    GlobalLogger(args)
+    global_logger = GlobalLogger(args)
 
     logging.info('bup-cron %s starting' % __version__)
     try:
