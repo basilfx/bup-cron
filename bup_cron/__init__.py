@@ -328,22 +328,22 @@ class LvmSnapshot(Snapshot):
                         relpath = os.path.relpath(self.path, mountpoint)
                         self.path = os.path.join(self.mountpoint(), relpath)
                     else:
-                        logging.warn("""failed to mount snapshot %s on %s,
+                        logging.warning("""failed to mount snapshot %s on %s,
 skipping snapshotting"""
                                      % (self.snapname(),
                                         self.mountpoint()))
                         self.cleanup()
                 else:
-                    logging.warn("""failed to create snapshot %s/%s,
+                    logging.warning("""failed to create snapshot %s/%s,
 skipping snapshooting"""
                                  % self.vg_lv)
             else:
                 # XXX: we could try to find the parent mountpoint...
                 # see https://github.com/pfrouleau/bup/commit/1244a2da0bf480591b19b9b6123a51ab8662ab56
-                logging.warn('%s is not a LVM mountpoint, skipping snapshotting'
+                logging.warning('%s is not a LVM mountpoint, skipping snapshotting'
                              % self.path)
         else:
-            logging.warn('Could not find mountpoint for %s, skipping snapshotting'
+            logging.warning('Could not find mountpoint for %s, skipping snapshotting'
                          % self.path)
         return self
 
@@ -411,7 +411,7 @@ skipping snapshooting"""
         if os.path.ismount(m):
             logging.debug('umounting %s' % m)
             if not self.call(['umount', m]):
-                logging.warn('failed to umount %s' % m)
+                logging.warning('failed to umount %s' % m)
         logging.debug('removing directory %s' % m)
         try:
             os.removedirs(m)
@@ -428,7 +428,7 @@ skipping snapshooting"""
             if stat.S_ISBLK(os.stat(device).st_mode):
                 logging.debug('dropping snapshot %s' % device)
                 if not self.call(cmd):
-                    logging.warn('failed to drop snapshot %s' % device)
+                    logging.warning('failed to drop snapshot %s' % device)
         except OSError:
             # normal: the device doesn't exist, moving on
             return
@@ -448,7 +448,7 @@ if sys.platform.startswith('cygwin'):
             if self.create_snapshot(device):
                 self.mount(fs_root)
             else:
-                logging.warn("""failed to create snapshot for %s, skipping snapshotting""" %
+                logging.warning("""failed to create snapshot for %s, skipping snapshotting""" %
                              self.path)
             return self
 
@@ -460,7 +460,7 @@ if sys.platform.startswith('cygwin'):
                     self.shadow_id = None
                     self.exits = False
                 else:
-                    logging.warn('failed to drop snapshot %s' % device)
+                    logging.warning('failed to drop snapshot %s' % device)
             if os.path.exists(self.mountpattern):
                 self._fail_if_mounted()
                 logging.debug('removing directory %s' % self.mountpattern)
@@ -487,7 +487,7 @@ if sys.platform.startswith('cygwin'):
                 self.exists = True
                 return True
             except Exception as e:
-                logging.warn('vss snapshot failed, id=%s: %s' % self.shadow_id, e)
+                logging.warning('vss snapshot failed, id=%s: %s' % self.shadow_id, e)
                 return False
 
         def _fail_if_mounted(self):
@@ -521,7 +521,7 @@ if sys.platform.startswith('cygwin'):
             if self.call(['vshadow', "-el=%s,%s" % (self.shadow_id, winmount)]):
                 self.path = self.path.replace(fs_root, self.mountpattern)
             else:
-                logging.warn("""failed to mount snapshot %s on %s, skipping snapshotting""" %
+                logging.warning("""failed to mount snapshot %s on %s, skipping snapshotting""" %
                              (self.shadow_id, self.mountpattern))
                 self.cleanup(True)
 
@@ -559,7 +559,7 @@ class Bup():
         if parity:
             cmd = base_cmd + ['--par2-ok']
             if not GlobalLogger().check_call(cmd):
-                logging.warn("""bup reports par2(1) as not working,
+                logging.warning("""bup reports par2(1) as not working,
 no recovery blocks written""")
                 return False
             cmd = base_cmd + ['--generate']
@@ -674,7 +674,7 @@ class Pidfile():
                 else:
                     try:
                         os.remove(self.pidfile)
-                        logging.warn('removed stale lockfile %s'
+                        logging.warning('removed stale lockfile %s'
                                      % (self.pidfile))
                         self.pidfd = os.open(self.pidfile,
                                              os.O_CREAT
@@ -859,7 +859,7 @@ even in info and debug
             subprocess.check_call(cmd, stdout=stdout, stderr=self._warn,
                                   close_fds=True)
         except subprocess.CalledProcessError:
-            logging.warn('command failed')
+            logging.warning('command failed')
             return False
         return True
 
@@ -1032,7 +1032,7 @@ Remote versions
                                    stderr=subprocess.PIPE)
         (out, err) = process.communicate(str(self))
         if process.returncode != 0:
-            logging.warn('failed to save bup note: `%s%s` (%d)' % (out, err, process.returncode))
+            logging.warning('failed to save bup note: `%s%s` (%d)' % (out, err, process.returncode))
         return process.returncode == 0
 
 
@@ -1075,11 +1075,11 @@ def process(args):
                 # success) but that would mean refactoring all of
                 # check_call()
                 if not Bup.fsck(args.remote):
-                    logging.warn('fsck determined there was an error and could not fix it')
+                    logging.warning('fsck determined there was an error and could not fix it')
                     success = False
 
             if args.parity and not Bup.fsck(args.remote, parity=True):
-                logging.warn('could not generate par2 parity blocks')
+                logging.warning('could not generate par2 parity blocks')
 
             if args.stats:
                 args.stats.branch = branch
@@ -1093,7 +1093,7 @@ def process(args):
 def bail(status, timer, msg=None):
     """cleanup on exit"""
     if msg:
-        logging.warn(msg)
+        logging.warning(msg)
     logging.info('bup-cron %s completed, %s' % (__version__, timer))
     sys.exit(status)
 
@@ -1119,16 +1119,17 @@ def main():
         with Pidfile(args.pidfile):
             if args.clear and not initialised:
                 if not Bup.clear_index():
-                    logging.warning('failed to clear the index')
+                    logging.warninging('failed to clear the index')
 
             success = process(args)
     except SystemExit:
         return
     except:  # noqa
+        raise
         # Get exception type and error, but print the traceback in debug only.
         t, e, b = sys.exc_info()
         if args.debug:
-            logging.warn(traceback.print_tb(b))
+            logging.warning(traceback.print_tb(b))
         bail(2, timer, 'aborted with unhandled exception %s: %s' % (t.__name__, e))
 
     if success:
