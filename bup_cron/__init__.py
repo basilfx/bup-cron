@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/python3
 
 """
 simple wrapper around bup index and save designed to be ran in cron
