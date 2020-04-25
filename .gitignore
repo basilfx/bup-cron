@@ -1,4 +1,6 @@
-build
+__pycache__
 *.egg-info
-dist
 *.pyc
+build
+dist
+env
