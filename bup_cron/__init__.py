@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: utf-8
+
 """
 simple wrapper around bup index and save designed to be ran in cron
 jobs, with support for filesystem snapshots, logging and configuration
