@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 try:
     from setuptools import setup
 except ImportError:
