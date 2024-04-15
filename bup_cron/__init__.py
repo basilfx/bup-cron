@@ -271,7 +271,7 @@ class ArgumentConfigParser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, arg_line):
         """parse a config file"""
         # skip whitespace and commented lines
-        if re.match("^(#|[\s]*$)", arg_line):
+        if re.match(r"^(#|[\s]*$)", arg_line):
             return []
         else:
             # all lines are assumed to be options
@@ -599,7 +599,7 @@ if sys.platform.startswith("cygwin"):
                 output = subprocess.check_output(["vshadow", "-p", device])
                 # * SNAPSHOT ID = {5a698842-f325-404a-83e7-6a7fa08760a1}
                 self.shadow_id = re.search(
-                    "\* SNAPSHOT ID = (\{[0-9A-Fa-f-]{36}\})", output
+                    r"\* SNAPSHOT ID = (\{[0-9A-Fa-f-]{36}\})", output
                 ).group(1)
                 logging.debug("shadow copy created: %s" % self.shadow_id)
                 self.exists = True
@@ -617,7 +617,7 @@ if sys.platform.startswith("cygwin"):
             output = subprocess.check_output(["vshadow", "-q"])
             winmount = self._convert2dos(self.mountpattern).replace("\\", "\\\\")
             mounted = re.search(
-                "^   - Exposed locally as: (%s)." % winmount,
+                r"^   - Exposed locally as: (%s)." % winmount,
                 output,
                 re.MULTILINE | re.IGNORECASE,
             )
@@ -978,7 +978,7 @@ class Timer(object):
         return "elasped: %s (%s)" % (str(self.diff()), self.times())
 
 
-_quotable = re.compile("\s")  # Any white space char (respects UNICODE)
+_quotable = re.compile(r"\s")  # Any white space char (respects UNICODE)
 
 
 def quote(str):
@@ -1024,7 +1024,7 @@ class BupCronMetaData(object):
             subprocess.check_output(["bup", "--version"]).decode().rstrip("\n")
         )
         git_output = subprocess.check_output(["git", "--version"]).decode().rstrip("\n")
-        self.local_git = re.match("git version (.*)", git_output).group(1)
+        self.local_git = re.match(r"git version (.*)", git_output).group(1)
         self.local_python = platform.python_version()
         if self.remote:
             server, repo_path = self.remote.split(":")
@@ -1033,8 +1033,8 @@ class BupCronMetaData(object):
             logging.debug("calling command `%s`" % cmd)
             bup, git, python = subprocess.check_output(cmd).decode().split("\n", 2)
             self.remote_bup = bup
-            self.remote_git = re.match("git version (.*)", git).group(1)
-            self.remote_python = re.match("Python (.*)", python).group(1)
+            self.remote_git = re.match(r"git version (.*)", git).group(1)
+            self.remote_python = re.match(r"Python (.*)", python).group(1)
 
     def disk_usage(self):
         if not self.remote:
